@@ -2228,7 +2228,7 @@ class BrowserDocument(BrowserCmisObject):
             #content = result.content.decode("ISO-8859-1")
         return io.StringIO(result.content)
 
-    def setContentStream(self, contentFile, contentType=None):
+    def setContentStream(self, contentFile, overwriteFlag, fileName):
 
         """
         Sets the content stream on this object.
@@ -2238,9 +2238,9 @@ class BrowserDocument(BrowserCmisObject):
         """
 
         # get the root folder URL
-        createDocUrl = self._repository.getRootFolderUrl() + "?objectId=" + self.id + "&cmisaction=setContent"
+        createDocUrl = self._repository.getRootFolderUrl() + "?objectId=" + self.id + "&cmisaction=setContent&overwriteFlag=" + str(overwriteFlag)
 
-        contentType, body = encode_multipart_formdata(None, contentFile, contentType)
+        contentType, body = encode_multipart_formdata({"cmis:name" : fileName}, contentFile, None)
 
         # invoke the URL
         result = self._cmisClient.binding.post(createDocUrl.encode('utf-8'),
