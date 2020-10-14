@@ -499,7 +499,7 @@ class BrowserCmisObject(object):
         self.addPropertiesIds(options,ids)
         
         repoUrl = self._repository.getRepositoryUrl() 
-        contentType, body = encode_multipart_formdata(options,None,None)
+        contentType, body = encode_multipart_formdata(options, None, None, None)
         result = self._cmisClient.binding.post(repoUrl.encode('utf-8'),
                                                    body,
                                                    contentType,
@@ -869,7 +869,7 @@ class BrowserCmisObject(object):
                 for j, perm in enumerate(entry.permissions):
                     fields['removeACEPermission[%d][%d]' % (i, j)] = perm
 
-            contentType, body = encode_multipart_formdata(fields, None, None)
+            contentType, body = encode_multipart_formdata(fields, None, None, None)
 
             # invoke the URL
             result = self._cmisClient.binding.post(aclUrl.encode('utf-8'),
@@ -1574,7 +1574,8 @@ class BrowserRepository(object):
                                  parentFolder=None,
                                  contentString=None,
                                  contentType=None,
-                                 contentEncoding=None):
+                                 contentEncoding=None,
+                                 fileName=None):
 
         """
         Creates a new document setting the content to the string provided. If
@@ -1600,7 +1601,7 @@ class BrowserRepository(object):
                 raise InvalidArgumentException
 
         return parentFolder.createDocument(name, properties, io.StringIO(contentString),
-                                           contentType, contentEncoding)
+                                           contentType, contentEncoding, fileName)
 
     def createDocument(self,
                        name,
@@ -1608,7 +1609,8 @@ class BrowserRepository(object):
                        parentFolder=None,
                        contentFile=None,
                        contentType=None,
-                       contentEncoding=None):
+                       contentEncoding=None,
+                       fileName=None):
 
         """
         Creates a new :class:`Document` object. If the repository
@@ -1661,7 +1663,7 @@ class BrowserRepository(object):
 
         setProps(properties, props, initialIndex=2)
 
-        contentType, body = encode_multipart_formdata(props, contentFile, contentType)
+        contentType, body = encode_multipart_formdata(props, contentFile, contentType, fileName)
 
         # invoke the URL
         result = self._cmisClient.binding.post(createDocUrl.encode('utf-8'),
@@ -1676,7 +1678,8 @@ class BrowserRepository(object):
     def createDocumentFromSource(self,
                                  sourceId,
                                  properties={},
-                                 parentFolder=None):
+                                 parentFolder=None,
+                                 fileName=None):
         """
         This is not yet implemented.
 
@@ -2113,7 +2116,7 @@ class BrowserDocument(BrowserCmisObject):
 
         ciUrl = self._repository.getRootFolderUrl() + "?objectId=" + self.id + "&cmisaction=checkIn"
         
-        contentType, body = encode_multipart_formdata(props, contentFile, contentType)
+        contentType, body = encode_multipart_formdata(props, contentFile, contentType, None)
         
         # invoke the URL
         result = self._cmisClient.binding.post(ciUrl.encode('utf-8'),
@@ -2240,7 +2243,7 @@ class BrowserDocument(BrowserCmisObject):
         # get the root folder URL
         createDocUrl = self._repository.getRootFolderUrl() + "?objectId=" + self.id + "&cmisaction=setContent&overwriteFlag=" + str(overwriteFlag)
 
-        contentType, body = encode_multipart_formdata({"cmis:name" : fileName}, contentFile, None)
+        contentType, body = encode_multipart_formdata(None, contentFile, None, fileName)
 
         # invoke the URL
         result = self._cmisClient.binding.post(createDocUrl.encode('utf-8'),
@@ -2403,7 +2406,8 @@ class BrowserFolder(BrowserCmisObject):
                                  properties={},
                                  contentString=None,
                                  contentType=None,
-                                 contentEncoding=None):
+                                 contentEncoding=None,
+                                 fileName=None):
 
         """
         Creates a new document setting the content to the string provided. If
@@ -2421,10 +2425,11 @@ class BrowserFolder(BrowserCmisObject):
                                                          self,
                                                          contentString,
                                                          contentType,
-                                                         contentEncoding)
+                                                         contentEncoding,
+                                                         fileName)
 
     def createDocument(self, name, properties={}, contentFile=None,
-                       contentType=None, contentEncoding=None):
+                       contentType=None, contentEncoding=None, fileName=None):
 
         """
         Creates a new Document object in the repository using
@@ -2469,7 +2474,8 @@ class BrowserFolder(BrowserCmisObject):
                                                self,
                                                contentFile,
                                                contentType,
-                                               contentEncoding)
+                                               contentEncoding,
+                                               fileName)
 
     def getChildren(self, **kwargs):
 
@@ -3537,7 +3543,7 @@ def getSpecializedObject(obj, **kwargs):
     return obj
 
 
-def encode_multipart_formdata(fields, contentFile, contentType):
+def encode_multipart_formdata(fields, contentFile, contentType, fileName):
 
     """
     fields is a sequence of (name, value) elements for regular form fields.
@@ -3548,7 +3554,6 @@ def encode_multipart_formdata(fields, contentFile, contentType):
     boundary = 'aPacHeCheMIStrycMisLIb%s' % (int(time.time()))
     crlf = '\r\n'
     L = []
-    fileName = None
     if fields:
         for (key, value) in fields.items():
             if key == 'cmis:name':
